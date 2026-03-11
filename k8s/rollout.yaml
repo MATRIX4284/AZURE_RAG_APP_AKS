@@ -76,8 +76,8 @@ spec:
               key: AZURE_TENANT_ID
         resources:
           requests:
-            cpu: "250m"
-            memory: "512Mi"
-          limits:
-            cpu: "500m"
+            cpu: "1000m"
             memory: "1Gi"
+          limits:
+            cpu: "4000m"
+            memory: "4Gi"
