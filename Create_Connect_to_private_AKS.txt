@@ -113,6 +113,8 @@ Watch the Rollout:
 
 kubectl argo rollouts get rollout azure-rag-app --watch
 
+
+
 In Case doing from private github:
 
 # 1. Create the secret with your credentials
