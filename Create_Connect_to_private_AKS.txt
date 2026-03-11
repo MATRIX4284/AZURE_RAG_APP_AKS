@@ -114,6 +114,11 @@ kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj-labs/argoc
 
 kubectl get pods -n argocd
 
+Create Image Updater Secrets:
+
+kubectl create secret generic acr-registry-secret -n argocd \
+  --from-literal=token=<ACR_USERNAME>:<ACR_PASSWORD>
+
 Apply the Image Updater:
 
 kubectl delete -f application.yaml

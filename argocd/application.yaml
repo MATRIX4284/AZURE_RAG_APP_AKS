@@ -4,11 +4,14 @@ metadata:
   name: azure-rag-app
   namespace: argocd
   annotations:
-    argocd-image-updater.argoproj.io/image-list: myimage=kaustavcontainerregistry.azurecr.io/azure-rag-app
+    argocd-image-updater.argoproj.io/image-list: myimage=kaustavcontainerregistry.azurecr.io/azure-rag-app:latest
     argocd-image-updater.argoproj.io/myimage.update-strategy: latest
     argocd-image-updater.argoproj.io/myimage.allow-tags: |
       regexp:^[0-9a-f]{40}$
+    # This prevents the race condition by telling Image Updater to update Git only when image exists
     argocd-image-updater.argoproj.io/write-back-method: git
+    # This points to the secret we are about to create for ACR access
+    argocd-image-updater.argoproj.io/myimage.pull-secret: secret:argocd/acr-registry-secret#token
 spec:
   project: default
   source:
