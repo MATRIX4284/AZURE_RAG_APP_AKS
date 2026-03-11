@@ -99,7 +99,12 @@ Create ArgoCD Image Updater:
 kubectl create namespace argocd
 
 This is ARGOCD updater that takes directly from github chnage after push
+
+
+
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+kubectl apply --server-side --force-conflicts -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 
 
 This is ARGOCD Image Updater that picks up chnages after the image in pushed to docker repo:
@@ -121,6 +126,12 @@ kubectl describe application azure-rag-app -n argocd
 Watch the Rollout:
 
 kubectl argo rollouts get rollout azure-rag-app --watch
+
+
+Delete Rollouts and associated pods:
+
+kubectl delete rollout azure-rag-app
+kubectl delete rs -l app=azure-rag-app
 
 
 
