@@ -111,6 +111,11 @@ This is ARGOCD Image Updater that picks up chnages after the image in pushed to 
 
 kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj-labs/argocd-image-updater/stable/config/install.yaml
 
+Stable version of Image Updaterthat does not need CRDs:
+
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj-labs/argocd-image-updater/v0.12.2/manifests/install.yaml
+
+
 
 kubectl get pods -n argocd
 
