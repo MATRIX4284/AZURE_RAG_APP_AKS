@@ -124,6 +124,9 @@ kubectl create secret generic repo-creds -n argocd \
   --from-literal=url=https://github.com/kaustav4284/AZURE_RAG_APP_AKS.git \
   --from-literal=password=<GITHUB_TOKEN> \
   --from-literal=username=<GITHUB_USERNAME>
+
+  
 # 2. Label it so Argo CD knows it's for repository access
+
 kubectl label secret repo-creds -n argocd "argocd.argoproj.io/secret-type=repository"
 
