@@ -86,7 +86,10 @@ kubectl create secret generic azure-rag-secrets \
   --from-literal=AZURE_CLIENT_SECRET=XXXX \
   --from-literal=AZURE_TENANT_ID=XXXX
 
+Delete Rollouts and associated pods:
 
+kubectl delete rollout azure-rag-app
+kubectl delete rs -l app=azure-rag-app
 
 Create Argo Rollouts:
 
@@ -138,10 +141,7 @@ Watch the Rollout:
 kubectl argo rollouts get rollout azure-rag-app --watch
 
 
-Delete Rollouts and associated pods:
 
-kubectl delete rollout azure-rag-app
-kubectl delete rs -l app=azure-rag-app
 
 
 
