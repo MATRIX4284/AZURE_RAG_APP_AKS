@@ -1,0 +1,83 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: azure-rag-app
+  labels:
+    app: azure-rag-app
+spec:
+  replicas: 2
+  strategy:
+    canary:
+      steps:
+      - setWeight: 20
+      - pause: { duration: 10s }
+      - setWeight: 40
+      - pause: { duration: 10s }
+      - setWeight: 60
+      - pause: { duration: 10s }
+      - setWeight: 80
+      - pause: { duration: 10s }
+  selector:
+    matchLabels:
+      app: azure-rag-app
+  template:
+    metadata:
+      labels:
+        app: azure-rag-app
+    spec:
+      containers:
+      - name: azure-rag-app
+        image: kaustavcontainerregistry.azurecr.io/azure-rag-app:latest
+        env:
+        - name: AZURE_STORAGE_CONNECTION_STRING
+          valueFrom:
+            secretKeyRef:
+              name: azure-rag-secrets
+              key: AZURE_STORAGE_CONNECTION_STRING
+        - name: AZURE_OPENAI_ENDPOINT
+          valueFrom:
+            secretKeyRef:
+              name: azure-rag-secrets
+              key: AZURE_OPENAI_ENDPOINT
+        - name: AZURE_OPENAI_API_VERSION
+          valueFrom:
+            secretKeyRef:
+              name: azure-rag-secrets
+              key: AZURE_OPENAI_API_VERSION
+        - name: AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME
+          valueFrom:
+            secretKeyRef:
+              name: azure-rag-secrets
+              key: AZURE_OPENAI_EMBEDDING_DEPLOYMENT_NAME
+        - name: AZURE_AI_SEARCH_ENDPOINT
+          valueFrom:
+            secretKeyRef:
+              name: azure-rag-secrets
+              key: AZURE_AI_SEARCH_ENDPOINT
+        - name: AZURE_AI_SEARCH_INDEX_NAME
+          valueFrom:
+            secretKeyRef:
+              name: azure-rag-secrets
+              key: AZURE_AI_SEARCH_INDEX_NAME
+        - name: AZURE_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: azure-rag-secrets
+              key: AZURE_CLIENT_ID
+        - name: AZURE_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: azure-rag-secrets
+              key: AZURE_CLIENT_SECRET
+        - name: AZURE_TENANT_ID
+          valueFrom:
+            secretKeyRef:
+              name: azure-rag-secrets
+              key: AZURE_TENANT_ID
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "512Mi"
+          limits:
+            cpu: "500m"
+            memory: "1Gi"
