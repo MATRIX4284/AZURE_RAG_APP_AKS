@@ -116,6 +116,7 @@ kubectl argo rollouts get rollout azure-rag-app --watch
 In Case doing from private github:
 
 # 1. Create the secret with your credentials
+
 # Replace <GITHUB_USERNAME> and <GITHUB_TOKEN> with your actual details
 
 kubectl delete secret repo-creds -n argocd
@@ -125,7 +126,7 @@ kubectl create secret generic repo-creds -n argocd \
   --from-literal=password=<GITHUB_TOKEN> \
   --from-literal=username=<GITHUB_USERNAME>
 
-  
+
 # 2. Label it so Argo CD knows it's for repository access
 
 kubectl label secret repo-creds -n argocd "argocd.argoproj.io/secret-type=repository"
