@@ -7,8 +7,9 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 # Docling imports
-from docling.document_converter import DocumentConverter
-from docling.datamodel.base_models import DocumentStream
+from docling.document_converter import DocumentConverter, PdfFormatOption
+from docling.datamodel.base_models import DocumentStream, InputFormat
+from docling.datamodel.pipeline_options import PdfPipelineOptions, TableFormerMode
 
 # LangChain imports
 from langchain_text_splitters import MarkdownHeaderTextSplitter
@@ -24,6 +25,8 @@ from azure.search.documents.indexes.models import (
     SimpleField,
     SearchableField,
 )
+
+import asyncio
 
 load_dotenv()
 
@@ -131,7 +134,7 @@ def pdf_markdown_parser(pdf_bytes: bytes, filename: str = "document.pdf"):
         print(f"Error parsing PDF: {e}")
         return None
 
-def process_pdf_to_faiss(blob_url: str, tender_name: str = "test"):
+async def process_pdf_to_faiss(blob_url: str, tender_name: str = "test"):
     """
     End-to-end pipeline: Download -> Parse -> Chunk -> Index.
     """
@@ -169,9 +172,9 @@ def process_pdf_to_faiss(blob_url: str, tender_name: str = "test"):
             fields=fields, # Pass fields here so it knows 'source' is filterable
         )
         
-        # Use similarity_search with a filter to check if the source already exists
+        # Use asimilarity_search with a filter to check if the source already exists
         # We use k=1 because we only care if ANY document exists for this source
-        existing_docs = temp_vector_store.similarity_search(
+        existing_docs = await temp_vector_store.asimilarity_search(
             query="*",
             k=1,
             filters=f"source eq '{blob_url}'"
@@ -230,13 +233,26 @@ def process_pdf_to_faiss(blob_url: str, tender_name: str = "test"):
                 if header != b"%PDF":
                     print("WARNING: File does not start with %PDF. It might not be a valid PDF.")
 
-            # 2. Parse with Docling
+            # 2. Parse with Docling (using to_thread since it's CPU-bound)
             print("Parsing PDF with Docling (converting to Markdown)...")
-            print("PDF_PATH")
-            print(str(local_path))
-            converter = DocumentConverter()
-            result = converter.convert(str(local_path))
+            
+            # Configure advanced PDF pipeline options
+            pipeline_options = PdfPipelineOptions()
+            pipeline_options.do_ocr = True
+            pipeline_options.do_table_structure = True
+            pipeline_options.table_structure_options.do_cell_matching = True
+            pipeline_options.table_structure_options.mode = TableFormerMode.ACCURATE 
+            
+            converter = DocumentConverter(
+                format_options={
+                    InputFormat.PDF: PdfFormatOption(pipeline_options=pipeline_options)
+                }
+            )
+            result = await asyncio.to_thread(converter.convert, str(local_path))
             markdown_content = result.document.export_to_markdown()
+
+            print("Markdown Content")
+            print(type(markdown_content))
 
             # 3. Chunk with LangChain (Markdown Header Splitting)
             print("Chunking document with MarkdownHeaderTextSplitter...")
@@ -276,7 +292,33 @@ def process_pdf_to_faiss(blob_url: str, tender_name: str = "test"):
             index_management_client_options={"retry_total": 3},
         )
 
-        vector_store.add_documents(documents=chunks)
+
+        #await vector_store.aadd_documents(documents=chunks)
+
+        # --- Optimized Parallel Ingestion ---
+        batch_size = 10      # Smaller batches = lighter network calls
+        concurrency = 5      # Process 5 batches at once
+        
+        # The 'Bouncer' that prevents Azure rate limiting (429 errors)
+        semaphore = asyncio.Semaphore(concurrency)
+
+        async def upload_batch(batch_index, batch_data):
+            async with semaphore:
+                # While one batch waits for Azure Search, 
+                # another batch can start calculating embeddings!
+                print(f"  [Batch {batch_index}] Uploading {len(batch_data)} chunks...")
+                await vector_store.aadd_documents(documents=batch_data)
+                print(f"  [Batch {batch_index}] Upload complete.")
+
+        # 1. Slice the document into batches
+        batches = [chunks[i : i + batch_size] for i in range(0, len(chunks), batch_size)]
+        
+        print(f"Updating Azure AI Search in {len(batches)} parallel batches...")
+        
+        # 2. Fire all batches simultaneously! 
+        # (The semaphore handles the 5-at-a-time limit automatically)
+        await asyncio.gather(*[upload_batch(i + 1, b) for i, b in enumerate(batches)])
+        # ------------------------------------
         print(f"Success! Azure AI Search index '{AZURE_AI_SEARCH_INDEX_NAME}' updated.")
 
     except Exception as e:

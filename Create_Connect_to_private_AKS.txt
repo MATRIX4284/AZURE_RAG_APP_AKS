@@ -140,11 +140,6 @@ Watch the Rollout:
 
 kubectl argo rollouts get rollout azure-rag-app --watch
 
-
-
-
-
-
 In Case doing from private github:
 
 # 1. Create the secret with your credentials
@@ -162,4 +157,13 @@ kubectl create secret generic repo-creds -n argocd \
 # 2. Label it so Argo CD knows it's for repository access
 
 kubectl label secret repo-creds -n argocd "argocd.argoproj.io/secret-type=repository"
+
+
+Delete the Rollout Deployment:
+
+kubectl delete -f argocd/application.yaml
+
+kubectl delete rollout azure-rag-app
+
+
 

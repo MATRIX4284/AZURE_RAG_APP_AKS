@@ -47,8 +47,8 @@ async def process_message(queue_client, msg):
             from urllib.parse import urlparse
             tender_name = posixpath.basename(urlparse(url).path)
             
-            # Use asyncio.to_thread to run the parsing (CPU-bound) without blocking this loop
-            await asyncio.to_thread(process_pdf_to_faiss, url, tender_name)
+            # Call the async function directly
+            await process_pdf_to_faiss(url, tender_name)
         else:
             print(f"[Thread-{thread_id}] Skipping non-PDF file: {url}")
             
@@ -69,7 +69,10 @@ async def consume_worker(worker_id):
     An individual worker that runs its own asyncio loop to poll the queue.
     """
     connection_string = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
-    queue_name = "pdf-upload-queue"
+    #For Local Testing
+    queue_name = "pdf-upload-queue-2"
+    #For Azure Kubernetes Deployment
+    #queue_name = "pdf-upload-queue"
 
     if not connection_string:
         print(f"Worker-{worker_id} Error: AZURE_STORAGE_CONNECTION_STRING not set.")
